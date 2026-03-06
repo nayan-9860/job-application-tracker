@@ -4,6 +4,7 @@ import com.project.job_application_tracker_backend.dto.AuthResponseDto;
 import com.project.job_application_tracker_backend.dto.LoginRequestDto;
 import com.project.job_application_tracker_backend.dto.RegisterRequestDto;
 import com.project.job_application_tracker_backend.entity.User;
+import com.project.job_application_tracker_backend.exceptions.ResourceNotFoundException;
 import com.project.job_application_tracker_backend.repository.UserRepository;
 import com.project.job_application_tracker_backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -46,10 +47,10 @@ public class AuthServiceImpl implements AuthService{
     public AuthResponseDto login(LoginRequestDto loginRequestDto) {
 
         User user = userRepository.findByEmail(loginRequestDto.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if(!passwordEncoder.matches(loginRequestDto.getPassword(), user.getPassword())){
-            throw new RuntimeException("Invalid password");
+            throw new ResourceNotFoundException("Invalid password");
         }
 
         String token = jwtService.generateAccessToken(user);

@@ -21,7 +21,7 @@ public class JobApplication {
 
     private String companyName;
 
-    private String jobTitle;
+    private String jobRole;
 
     private String location;
 
