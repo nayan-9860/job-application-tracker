@@ -5,6 +5,7 @@ import com.project.job_application_tracker_backend.dto.LoginRequestDto;
 import com.project.job_application_tracker_backend.dto.RegisterRequestDto;
 import com.project.job_application_tracker_backend.entity.User;
 import com.project.job_application_tracker_backend.repository.UserRepository;
+import com.project.job_application_tracker_backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ public class AuthServiceImpl implements AuthService{
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
 
     @Override
@@ -50,6 +52,8 @@ public class AuthServiceImpl implements AuthService{
             throw new RuntimeException("Invalid password");
         }
 
-        return new AuthResponseDto("dummy-token", "Login successful");
+        String token = jwtService.generateAccessToken(user);
+
+        return new AuthResponseDto(token,"Login successful");
     }
 }
