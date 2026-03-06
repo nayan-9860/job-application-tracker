@@ -1,9 +1,11 @@
 package com.project.job_application_tracker_backend.controller;
 
+import com.project.job_application_tracker_backend.dto.ApiResponseDto;
 import com.project.job_application_tracker_backend.dto.AuthResponseDto;
 import com.project.job_application_tracker_backend.dto.LoginRequestDto;
 import com.project.job_application_tracker_backend.dto.RegisterRequestDto;
 import com.project.job_application_tracker_backend.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,16 +21,26 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponseDto> register
-            (@RequestBody RegisterRequestDto requestDto){
+    public ResponseEntity<ApiResponseDto<AuthResponseDto>>register
+            (@Valid @RequestBody RegisterRequestDto requestDto){
 
-        return ResponseEntity.ok(authService.register(requestDto));
+        AuthResponseDto responseDto = authService.register(requestDto);
+
+        ApiResponseDto<AuthResponseDto> response =
+                new ApiResponseDto<>(true, "User registered successfully", responseDto);
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDto> login
-            (@RequestBody LoginRequestDto loginRequestDto){
+    public ResponseEntity<ApiResponseDto<AuthResponseDto>> login
+            (@Valid @RequestBody LoginRequestDto requestDto){
 
-        return ResponseEntity.ok(authService.login(loginRequestDto));
+        AuthResponseDto responseDto = authService.login(requestDto);
+
+        ApiResponseDto<AuthResponseDto> response =
+                new ApiResponseDto<>(true, "User registered successfully", responseDto);
+
+        return ResponseEntity.ok(response);
     }
 }

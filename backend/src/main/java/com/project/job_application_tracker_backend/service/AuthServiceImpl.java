@@ -34,6 +34,7 @@ public class AuthServiceImpl implements AuthService{
                 .name(requestDto.getName())
                 .email(requestDto.getEmail())
                 .password(passwordEncoder.encode(requestDto.getPassword()))
+                .role("ROLE_USER")
                 .createdAt(LocalDateTime.now())
                 .build();
 

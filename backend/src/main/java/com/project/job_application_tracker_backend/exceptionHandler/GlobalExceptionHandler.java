@@ -1,5 +1,6 @@
 package com.project.job_application_tracker_backend.exceptionHandler;
 
+import com.project.job_application_tracker_backend.dto.ApiErrorDto;
 import com.project.job_application_tracker_backend.exceptions.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,59 +19,86 @@ public class GlobalExceptionHandler {
 
     // Resource not found
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleResourceNotFound(
+    public ResponseEntity<ApiErrorDto> handleResourceNotFound(
             ResourceNotFoundException ex) {
 
-        Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
+        ApiErrorDto error = new ApiErrorDto(
+                false,
+                ex.getMessage(),
+                HttpStatus.NOT_FOUND.value(),
+                LocalDateTime.now(),
+                null
+        );
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
     // Validation errors from DTO
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidation(
+    public ResponseEntity<ApiErrorDto> handleValidation(
             MethodArgumentNotValidException ex) {
 
-        Map<String, String> errors = new HashMap<>();
+        Map<String, String> validationErrors = new HashMap<>();
 
-        ex.getBindingResult().getFieldErrors().forEach(error ->
-                errors.put(error.getField(), error.getDefaultMessage())
+        ex.getBindingResult().getFieldErrors().forEach(err ->
+                validationErrors.put(err.getField(), err.getDefaultMessage())
         );
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+        ApiErrorDto error = new ApiErrorDto(
+                false,
+                "Validation failed",
+                HttpStatus.BAD_REQUEST.value(),
+                LocalDateTime.now(),
+                validationErrors
+        );
+
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
     // Login failure
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Map<String, String>> handleBadCredentials(
+    public ResponseEntity<ApiErrorDto> handleBadCredentials(
             BadCredentialsException ex) {
 
-        Map<String, String> error = new HashMap<>();
-        error.put("error", "Invalid email or password");
+        ApiErrorDto error = new ApiErrorDto(
+                false,
+                "Invalid email or password",
+                HttpStatus.UNAUTHORIZED.value(),
+                LocalDateTime.now(),
+                null
+        );
 
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
     }
-
     // Access denied
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Map<String, String>> handleAccessDenied(
+    public ResponseEntity<ApiErrorDto> handleAccessDenied(
             AccessDeniedException ex) {
 
-        Map<String, String> error = new HashMap<>();
-        error.put("error", "Access denied");
+        ApiErrorDto error = new ApiErrorDto(
+                false,
+                "Access denied",
+                HttpStatus.FORBIDDEN.value(),
+                LocalDateTime.now(),
+                null
+        );
 
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
     }
 
     // Fallback exception (last handler)
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGeneralException(
+    public ResponseEntity<ApiErrorDto> handleGeneralException(
             Exception ex) {
 
-        Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
+        ApiErrorDto error = new ApiErrorDto(
+                false,
+                ex.getMessage(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                LocalDateTime.now(),
+                null
+        );
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

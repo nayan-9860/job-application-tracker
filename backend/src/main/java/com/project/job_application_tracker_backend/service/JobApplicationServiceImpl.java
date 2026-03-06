@@ -8,74 +8,131 @@ import com.project.job_application_tracker_backend.entity.User;
 import com.project.job_application_tracker_backend.exceptions.ResourceNotFoundException;
 import com.project.job_application_tracker_backend.repository.JobApplicationRepository;
 import com.project.job_application_tracker_backend.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
+
 import org.modelmapper.ModelMapper;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class JobApplicationServiceImpl implements JobApplicationService{
+public class JobApplicationServiceImpl implements JobApplicationService {
 
-    private final JobApplicationRepository applicationRepository;
-    private final ModelMapper modelMapper;
+    private final JobApplicationRepository jobApplicationRepository;
     private final UserRepository userRepository;
+    private final ModelMapper modelMapper;
 
+    // CREATE JOB APPLICATION
     @Override
-    public JobApplicationResponseDto createJobApplication(JobApplicationRequestDto requestDto , Long userId) {
+    public JobApplicationResponseDto createApplication(JobApplicationRequestDto dto) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = getCurrentUser();
 
-        JobApplication jobApplication = modelMapper.map(requestDto , JobApplication.class);
+        JobApplication jobApplication = modelMapper.map(dto, JobApplication.class);
 
         jobApplication.setUser(user);
 
-        JobApplication saved = applicationRepository.save(jobApplication);
+        JobApplication savedJob = jobApplicationRepository.save(jobApplication);
 
-        return modelMapper.map(saved , JobApplicationResponseDto.class);
+        return modelMapper.map(savedJob, JobApplicationResponseDto.class);
     }
 
+    // GET CURRENT USER JOBS
     @Override
-    public List<JobApplicationResponseDto> getAllJobApplicationsByUser(Long userId) {
-        return applicationRepository.findByUserId(userId)
-                .stream()
-                .map(app -> modelMapper.map(app , JobApplicationResponseDto.class))
+    public List<JobApplicationResponseDto> getMyApplications() {
+
+        User user = getCurrentUser();
+
+        List<JobApplication> jobs = jobApplicationRepository.findByUserId(user.getId());
+
+        return jobs.stream()
+                .map(job -> modelMapper.map(job, JobApplicationResponseDto.class))
                 .toList();
     }
 
+    // GET JOB BY ID
     @Override
     public JobApplicationResponseDto getApplicationById(Long id) {
-          JobApplication jobApplication = applicationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("job application is not found"));
 
-          return modelMapper.map(jobApplication , JobApplicationResponseDto.class);
+        User user = getCurrentUser();
+
+        JobApplication job = jobApplicationRepository
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found"));
+
+        if (!job.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("You are not allowed to access this job");
+        }
+
+        return modelMapper.map(job, JobApplicationResponseDto.class);
     }
 
+    // UPDATE JOB
     @Override
-    public JobApplicationResponseDto updateJobApllication(Long id, JobApplicationRequestDto requestDto) {
+    public JobApplicationResponseDto updateApplication(Long id, JobApplicationRequestDto dto) {
 
-        JobApplication application = applicationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Job application not found with id: \" + id"));
+        User user = getCurrentUser();
 
-        application.setCompanyName(requestDto.getCompanyName());
-        application.setJobRole(requestDto.getJobRole());
-        application.setStatus(JobStatus.valueOf(requestDto.getStatus()));
+        JobApplication job = jobApplicationRepository
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found"));
 
-        JobApplication updated = applicationRepository.save(application);
+        if (!job.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("You cannot update this job");
+        }
 
-        return modelMapper.map(updated , JobApplicationResponseDto.class);
+        job.setCompanyName(dto.getCompanyName());
+        job.setJobRole(dto.getJobRole());
+        job.setStatus(JobStatus.valueOf(dto.getStatus()));
+
+        JobApplication updatedJob = jobApplicationRepository.save(job);
+
+        return modelMapper.map(updatedJob, JobApplicationResponseDto.class);
     }
 
+    // DELETE JOB
     @Override
     public void deleteApplication(Long id) {
 
-        JobApplication application = applicationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+        User user = getCurrentUser();
 
-        applicationRepository.delete(application);
+        JobApplication job = jobApplicationRepository
+                .findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found"));
+
+        if (!job.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("You cannot delete this job");
+        }
+
+        jobApplicationRepository.delete(job);
     }
 
+    // ADMIN API
+    @Override
+    public List<JobApplicationResponseDto> getAllApplications() {
+
+        List<JobApplication> jobs = jobApplicationRepository.findAll();
+
+        return jobs.stream()
+                .map(job -> modelMapper.map(job, JobApplicationResponseDto.class))
+                .toList();
+    }
+
+    // GET LOGGED-IN USER
+    private User getCurrentUser() {
+
+        Authentication authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        String email = authentication.getName();
+
+        return userRepository
+                .findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
 }
