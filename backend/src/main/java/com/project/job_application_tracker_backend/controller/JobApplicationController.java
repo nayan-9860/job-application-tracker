@@ -6,6 +6,7 @@ import com.project.job_application_tracker_backend.dto.JobApplicationResponseDto
 import com.project.job_application_tracker_backend.service.JobApplicationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -37,12 +38,19 @@ public class JobApplicationController {
     //user can see their all applied  jobs only
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/my-jobs")
-    public ResponseEntity<ApiResponseDto<List<JobApplicationResponseDto>>> getMyJobs(){
+    public ResponseEntity<ApiResponseDto<Page<JobApplicationResponseDto>>> getMyJobs(
+            @RequestParam (defaultValue = "0") int page ,
+            @RequestParam (defaultValue = "5") int pageSize ,
+            @RequestParam (defaultValue = "appliedDate") String sortBy ,
+            @RequestParam (defaultValue = "desc") String sortDir ,
+            @RequestParam (required = false) String status ,
+            @RequestParam (required = false) String companyName
+    ){
 
-        List<JobApplicationResponseDto> jobs =
-                jobApplicationService.getMyApplications();
+        Page<JobApplicationResponseDto> jobs =
+                jobApplicationService.getMyApplications(page , pageSize , sortBy ,sortDir ,status , companyName);
 
-        ApiResponseDto<List<JobApplicationResponseDto>> response =
+        ApiResponseDto<Page<JobApplicationResponseDto>> response =
                 new ApiResponseDto<>(true, "Jobs fetched successfully", jobs);
 
         return ResponseEntity.ok(response);

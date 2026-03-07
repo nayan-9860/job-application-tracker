@@ -12,6 +12,10 @@ import com.project.job_application_tracker_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -43,15 +47,51 @@ public class JobApplicationServiceImpl implements JobApplicationService {
 
     // GET CURRENT USER JOBS
     @Override
-    public List<JobApplicationResponseDto> getMyApplications() {
+    public Page<JobApplicationResponseDto> getMyApplications(
+            int page,
+            int pageSize,
+            String sortBy,
+            String sortDir,
+            String status,
+            String companyName
+    ) {
 
+        // Create Sort object using normal if-else
+        Sort sort;
+        if ("asc".equalsIgnoreCase(sortDir)) {
+            sort = Sort.by(sortBy).ascending();
+        } else {
+            sort = Sort.by(sortBy).descending();
+        }
+
+        Pageable pageable = PageRequest.of(page, pageSize, sort);
+
+        // Get current user email
         User user = getCurrentUser();
 
-        List<JobApplication> jobs = jobApplicationRepository.findByUserId(user.getId());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
 
-        return jobs.stream()
-                .map(job -> modelMapper.map(job, JobApplicationResponseDto.class))
-                .toList();
+        Page<JobApplication> applications;
+
+        // Filtering logic
+        if (status != null && companyName != null) {
+            // Filter by both status and company
+            applications = jobApplicationRepository
+                    .findByUserEmailAndStatusAndCompanyNameContainingIgnoreCase(email, status, companyName, pageable);
+        } else if (status != null) {
+            applications = jobApplicationRepository
+                    .findByUserEmailAndStatus(email, status, pageable);
+        } else if (companyName != null) {
+            applications = jobApplicationRepository
+                    .findByUserEmailAndCompanyNameContainingIgnoreCase(email, companyName, pageable);
+        } else {
+            applications = jobApplicationRepository
+                    .findByUserEmail(email, pageable);
+        }
+
+        // Map to DTO
+        return applications.map(app -> modelMapper.map(app, JobApplicationResponseDto.class));
     }
 
     // GET JOB BY ID
@@ -113,13 +153,21 @@ public class JobApplicationServiceImpl implements JobApplicationService {
 
     // ADMIN API
     @Override
-    public List<JobApplicationResponseDto> getAllApplications() {
+    public Page<JobApplicationResponseDto> getAllApplications(
+            int page,
+            int pageSize,
+            String sortBy,
+            String sortDir) {
 
-        List<JobApplication> jobs = jobApplicationRepository.findAll();
+        Pageable pageable = PageRequest.of(
+                page,
+                pageSize,
+                Sort.by(Sort.Direction.fromString(sortDir), sortBy)
+        );
 
-        return jobs.stream()
-                .map(job -> modelMapper.map(job, JobApplicationResponseDto.class))
-                .toList();
+        Page<JobApplication> jobs = jobApplicationRepository.findAll(pageable);
+
+        return jobs.map(job -> modelMapper.map(job, JobApplicationResponseDto.class));
     }
 
     // GET LOGGED-IN USER
