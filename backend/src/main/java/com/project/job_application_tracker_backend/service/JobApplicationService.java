@@ -2,6 +2,7 @@ package com.project.job_application_tracker_backend.service;
 
 import com.project.job_application_tracker_backend.dto.JobApplicationRequestDto;
 import com.project.job_application_tracker_backend.dto.JobApplicationResponseDto;
+import com.project.job_application_tracker_backend.dto.StatsDto;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -31,4 +32,6 @@ public interface JobApplicationService {
             String sortBy,
             String sortDir
     ); // ADMIN
+
+    StatsDto getJobStats();
 }

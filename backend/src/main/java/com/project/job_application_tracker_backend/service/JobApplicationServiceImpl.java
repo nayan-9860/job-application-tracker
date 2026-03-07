@@ -2,6 +2,7 @@ package com.project.job_application_tracker_backend.service;
 
 import com.project.job_application_tracker_backend.dto.JobApplicationRequestDto;
 import com.project.job_application_tracker_backend.dto.JobApplicationResponseDto;
+import com.project.job_application_tracker_backend.dto.StatsDto;
 import com.project.job_application_tracker_backend.entity.JobApplication;
 import com.project.job_application_tracker_backend.entity.JobStatus;
 import com.project.job_application_tracker_backend.entity.User;
@@ -168,6 +169,22 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         Page<JobApplication> jobs = jobApplicationRepository.findAll(pageable);
 
         return jobs.map(job -> modelMapper.map(job, JobApplicationResponseDto.class));
+    }
+
+    @Override
+    public StatsDto getJobStats() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String email = authentication.getName();
+
+        long applied = jobApplicationRepository.countAppliedJobs(email);
+        long interview = jobApplicationRepository.countInterviewJobs(email);
+        long offer = jobApplicationRepository.countOfferJobs(email);
+        long rejected = jobApplicationRepository.countRejectedJobs(email);
+
+        return new StatsDto(applied, interview, offer, rejected);
     }
 
     // GET LOGGED-IN USER

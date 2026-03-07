@@ -3,6 +3,7 @@ package com.project.job_application_tracker_backend.controller;
 import com.project.job_application_tracker_backend.dto.ApiResponseDto;
 import com.project.job_application_tracker_backend.dto.JobApplicationRequestDto;
 import com.project.job_application_tracker_backend.dto.JobApplicationResponseDto;
+import com.project.job_application_tracker_backend.dto.StatsDto;
 import com.project.job_application_tracker_backend.service.JobApplicationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -95,6 +96,17 @@ public class JobApplicationController {
 
         ApiResponseDto<String> response =
                 new ApiResponseDto<>(true, "Application deleted successfully", null);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/stats")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ApiResponseDto<StatsDto>> getStats(){
+
+        StatsDto stats = jobApplicationService.getJobStats();
+        ApiResponseDto<StatsDto> response =
+                new ApiResponseDto<>(true , "Job statistics fetched successfully" , stats);
 
         return ResponseEntity.ok(response);
     }
